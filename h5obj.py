@@ -31,6 +31,10 @@ sure that if you get back exactly the datatype that you were saving (e.g., if
 you save a tuple or list using h5py.File, you probably get back a
 numpy.ndarray).
 
+This module depends on the module "h5py". It is available at
+"http://www.h5py.org/" under a BSD license. The original author is Andrew
+Collette.
+
 To do:
 --> make get-method unpickle (so far it just calls the original get-method)
 """
@@ -49,8 +53,10 @@ class Group(collections.MutableMapping):
   __created__ = '2013-07-07'
   __modified__ = '2013-07-07'
 
-  def __init__(self, h5group):
+  def __init__(self, h5group, pickle=True, unpickle=True):
     self.h5group = h5group
+    self.pickle = pickle
+    self.unpickle = unpickle
 
   def create_group(self, name):
     return Group(self.h5group.create_group(name))
@@ -67,14 +73,14 @@ class Group(collections.MutableMapping):
     return self.h5group.require_dataset(name, shape, dtype, exact=exact,
                                         **kwargs)
 
-  def __getitem__(self, key, unpickle=True):
+  def __getitem__(self, key):
     if not key in self.h5group:
       return self.h5group[key] # let h5py raise its own exception
     if isinstance(self.h5group[key], h5py.Group):
       return Group(self.h5group[key])
     else:
       data = self.h5group[key].value
-      if isinstance(data, basestring) and unpickle:
+      if isinstance(data, basestring) and self.unpickle:
         try: data = cPickle.loads(data)
         except: pass
       return data
@@ -83,15 +89,15 @@ class Group(collections.MutableMapping):
     return self.h5group.get(name, default=default, getclass=getclass,
                             getlink=getlink)
 
-  def __setitem__(self, key, obj, pickle=True):
+  def __setitem__(self, key, obj):
     try: self.h5group[key] = obj
     except ValueError:
-      if pickle:
+      if self.pickle:
         self.h5group[key] = cPickle.dumps(obj)
       else:
         raise
     else:
-      if type(self.h5group[key]) is not type(obj) and pickle:
+      if type(self.h5group[key]) is not type(obj) and self.pickle:
         del self.h5group[key]
         self.h5group[key] = cPickle.dumps(obj)
 
