@@ -31,9 +31,12 @@ sure that if you get back exactly the datatype that you were saving (e.g., if
 you save a tuple or list using h5py.File, you probably get back a
 numpy.ndarray).
 
+If in certain situations, attempts to pickle/unpickle data are not wanted,
+it can be switched off using the attributes "pickle" and "unpickle" of the
+classes "Group" and "File".
+
 This module depends on the module "h5py". It is available at
-"http://www.h5py.org/" under a BSD license. The original author is Andrew
-Collette.
+"http://www.h5py.org/" under a BSD license.
 
 To do:
 --> make get-method unpickle (so far it just calls the original get-method)
@@ -159,8 +162,12 @@ class File(Group):
   def libver(self):
     return self.h5group.libver
 
-  def __init__(self, *args, **kwargs):
-    self.h5group = h5py.File(*args, **kwargs)
+  def __init__(self, name, mode=None, driver=None, libver=None, pickle=True,
+               unpickle=True, **kwargs):
+    self.h5group = h5py.File(name, mode=mode, driver=driver, libver=libver,
+                             **kwargs)
+    self.pickle = pickle
+    self.unpickle = unpickle
 
   def close(self):
     self.h5group.close()
