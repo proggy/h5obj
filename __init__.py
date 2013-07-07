@@ -1,2 +1,2 @@
 from h5obj import *
-__doc__ = h5obj.__doc__
+from h5obj import __doc__

@@ -42,7 +42,7 @@ To do:
 --> make get-method unpickle (so far it just calls the original get-method)
 """
 __created__  = '2013-07-07'
-__modified__ = '2013-07-07'
+__modified__ = '2013-07-08'
 __version__  = '0.1'
 # former h5obj (developed 2011-10-21 until 2013-03-14)
 import collections, cPickle, h5py
@@ -98,16 +98,16 @@ class Group(collections.MutableMapping):
                             getlink=getlink)
 
   def __setitem__(self, key, obj):
-    try: self.h5group[key] = obj
-    except ValueError:
+    try: self.h5group.create_dataset(key, data=obj)
+    except (ValueError, TypeError):
       if self.pickle:
-        self.h5group[key] = cPickle.dumps(obj)
+        self.h5group.create_dataset(key, data=cPickle.dumps(obj))
       else:
         raise
     else:
-      if type(self.h5group[key]) is not type(obj) and self.pickle:
+      if type(self.h5group[key].value) is not type(obj) and self.pickle:
         del self.h5group[key]
-        self.h5group[key] = cPickle.dumps(obj)
+        self.h5group.create_dataset(key, data=cPickle.dumps(obj))
 
   def __delitem__(self, key):
     del self.h5group[key]
