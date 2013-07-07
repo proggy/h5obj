@@ -56,10 +56,11 @@ class Group(collections.MutableMapping):
   __created__ = '2013-07-07'
   __modified__ = '2013-07-07'
 
-  def __init__(self, h5group, pickle=True, unpickle=True):
+  def __init__(self, h5group, pickle=True, unpickle=True, return_value=True):
     self.h5group = h5group
     self.pickle = pickle
     self.unpickle = unpickle
+    self.return_value = return_value
 
   def create_group(self, name):
     return Group(self.h5group.create_group(name))
@@ -82,11 +83,15 @@ class Group(collections.MutableMapping):
     if isinstance(self.h5group[key], h5py.Group):
       return Group(self.h5group[key])
     else:
-      data = self.h5group[key].value
-      if isinstance(data, basestring) and self.unpickle:
-        try: data = cPickle.loads(data)
-        except: pass
-      return data
+      dset = self.h5group[key]
+      if self.return_value:
+        if self.unpickle and isinstance(dset.value, basestring):
+          try: return cPickle.loads(dset.value)
+          except: return dset.value
+        else:
+          return dset.value
+      else:
+        return dset
 
   def get(self, name, default=None, getclass=False, getlink=False):
     return self.h5group.get(name, default=default, getclass=getclass,
@@ -163,11 +168,12 @@ class File(Group):
     return self.h5group.libver
 
   def __init__(self, name, mode=None, driver=None, libver=None, pickle=True,
-               unpickle=True, **kwargs):
+               unpickle=True, return_value=True, **kwargs):
     self.h5group = h5py.File(name, mode=mode, driver=driver, libver=libver,
                              **kwargs)
     self.pickle = pickle
     self.unpickle = unpickle
+    self.return_value = return_value
 
   def close(self):
     self.h5group.close()
