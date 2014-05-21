@@ -1,0 +1,314 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Save almost any native Python type to a HDF5 file, even nested lists,
+tuples, sets and dictionaries, as well as Numpy arrays. None and boolean
+values are also handled. Lists, tuples, dictionaries and sets may be empty
+(length 0), but Numpy arrays still don't. Uses the module h5py (extends the
+class h5py.File).
+
+By Daniel Jung.
+"""
+# 2011-10-21 until 2011-10-25
+from h5py import File as h5pyFile
+from h5py import Group as h5pyGroup
+
+class File(h5pyFile): # Multiple inheritance
+  """Create a new file object. Supercedes h5py.File to be able to write most of
+  the native Python types to HDF5 files."""
+  # 2011-10-21 until 2011-10-25
+  pass
+
+class Group(h5pyGroup):
+  """Create a new HDF5 group. Supercedes h5py.Group to be able to write most of
+  the native Python types to HDF5 files."""
+  # 2011-10-25
+  pass
+
+def _create_obj(self, **objects):
+  """Store python objects to the HDF5 file. Depending on the object type,
+  it either just creates a suitable HDF5 dataset, or it may create multiple
+  nested HDF5 groups, together with certain attributes and datasets, to
+  represent the Python object. name=object value pairs have to be specified
+  using keyword arguments."""
+  # 2011-10-21 until 2011-10-25
+  # former tb.savehdf from 2011-02-05 until 2011-03-30
+  from time import ctime
+
+  # Loop over all given names and data objects
+  for name, data in objects.iteritems():
+    # Get types
+    dtype = type(data).__name__
+    ntype = type(name).__name__
+
+    # Convert non-string names to string
+    if ntype != 'str':
+      name = repr(name)
+
+    # Distinguish object types
+    if data is None:
+      # None type
+      new = self.create_dataset(name, data='None')
+    elif dtype == 'bool':
+      # Boolean type
+      new = self.create_dataset(name, data=data)
+    elif dtype in ('int', 'float', 'long', 'complex'):
+      # Built-in numeric types
+      new = self.create_dataset(name, data=data)
+    elif dtype == 'str':
+      # String
+      new = self.create_dataset(name, data=data)
+      ### Can unicode also be supported somehow?
+    elif dtype in ('list', 'tuple'):
+      if len(data) == 0:
+        new = self.create_dataset(name, data='__EMPTY__')
+      elif _allscalar(data) and _equaltype(data) and not _anyobject(data):
+        # Then, a normal dataset can be used
+        new = self.create_dataset(name, data=data)
+      else:
+        # a HDF5 group has to be used to store the sequence
+        new = self.create_group(name)
+        keys = ['key%s' % k for k in xrange(len(data))]
+        new.create_obj(**dict(zip(keys, data)))
+    elif dtype in ('set', 'frozenset'):
+      if len(data) == 0:
+        new = self.create_dataset(name, data='__EMPTY__')
+      elif _allscalar(data) and _equaltype(data):
+        ### Why not check anyobject here?
+        new = self.create_dataset(name, data=tuple(data))
+      else:
+        # Use HDF5 group
+        new = self.create_group(name)
+        keys = ['key%s' % k for k in xrange(len(data))]
+        new.create_obj(**dict(zip(keys, tuple(data))))
+    elif dtype == 'dict':
+      new = self.create_group(name)
+      new.create_obj(**data)
+      #for k, d in data.iteritems():
+        #savehdf(newobj, key=k, data=d)
+    #elif dtype == 'struct':
+      #newobj = hdfobj.create_group(key)
+      #savehdf(newobj, **data)
+    elif dtype in ('ndarray', 'matrix'):
+      if 0 in data.shape:
+        # Empty array or matrix. Save string representation
+        new = self.create_dataset(name, data=repr(data))
+        ### Maybe just save "()" or "0" (or something similar)
+      else:
+        new = self.create_dataset(name, data=data)
+    elif dtype in ('csc_matrix', 'csr_matrix', 'bsr_matrix', 'lil_matrix',
+                    'dok_matrix', 'coo_matrix', 'dia_matrix'):
+      if dtype != 'csr_matrix':
+        # Convert to csr_matrix:
+        data = data.tocsr()
+      new = self.create_group(name)
+      new.create_obj(data=data.data, indices=data.indices,
+                      indptr=data.indptr, shape=data.shape)
+    elif hasattr(data, '__dict__'):
+      # If the object offers a dictionary, assume it is an instance of some
+      # user-defined class. So save it and hope it will be enough to
+      # reconstruct the object later
+      new = self.create_group(name)
+      new.create_obj(**data.__dict__)
+    else:
+      raise TypeError, 'datatype not supported: %s' % dtype
+
+    # Always store types and current date and time in form of HDF5 attributes
+    new.attrs.create('__DTYPE__', dtype)
+    new.attrs.create('__NTYPE__', ntype)
+    new.attrs.create('DATE', ctime())
+
+    # If the object has attributes named __module__ or __class__, store them
+    # They are important to recreate objects of user-defined classes
+    try:
+      new.attrs.create('__MODULE__', data.__module__)
+    except AttributeError:
+      pass
+    try:
+      new.attrs.create('__CLASS__', data.__class__.__name__)
+    except AttributeError:
+      pass
+
+def _get_obj(self, *names):
+  """Read Python objects that are stored in the HDF5 file."""
+  # 2011-10-25
+  # former tb.savehdf from 2011-02-05 until 2011-03-30
+  values = []
+
+  for name in names:
+    if name not in self:
+      raise KeyError,\
+            'no dataset or group named %s in HDF5 file object' % key
+
+    # Get object
+    obj = self[name]
+
+    # Load attributes
+    dtype     = obj.attrs.get('__DTYPE__',  None)
+    ntype     = obj.attrs.get('__NTYPE__',  None)
+    module    = obj.attrs.get('__MODULE__', None)
+    classname = obj.attrs.get('__CLASS__',  None)
+
+    # Distinguish data types
+    if module is not None and classname is not None:
+      # Create instance of user-defined class
+      __import__(module, fromlist=[classname])
+      constructor = globals()[classname]
+      value = constructor()
+      ### Constructors that expect arguments are currently not supported
+      ### (can they?)
+
+      # Restore the attributes of the object
+      # Consider that they might be native Python objects or instances of
+      # user-defined classes itself
+      for key in self.iterkeys():
+        value.__dict__[key] = obj.get_obj(key)
+    elif dtype == 'NoneType':
+      value = None
+    elif dtype == 'bool':
+      value = obj.value
+    elif dtype == 'int':
+      value = int(obj.value)
+    elif dtype == 'long':
+      value = long(obj.value)
+    elif dtype == 'float':
+      value = float(obj.value)
+    elif dtype == 'complex':
+      value = complex(obj.value)
+    elif dtype == 'str':
+      value = str(obj.value)
+    elif dtype in ('list', 'tuple'):
+      if type(obj).__name__ == 'Group':
+        keys = obj.keys()
+        keys.sort()
+        value = []
+        for key in keys:
+          value.append(obj.get_obj(key))
+        value = eval(dtype)(value)
+      elif type(obj.value).__name__ == 'str' and obj.value == '__EMPTY__':
+        # Empty lists and tuples
+        value = eval(dtype)(tuple())
+      else:
+        # Plain lists and tuples that were saved as a normal 1D array dataset
+        value = eval(dtype)(obj.value)
+    elif dtype in ('set', 'frozenset'):
+      if type(obj).__name__ == 'Group':
+        keys = obj.keys()
+        value = []
+        for key in keys:
+          value.append(obj.get_obj(key))
+        value = eval(dtype)(value)
+      elif type(obj.value).__name__ == 'str' and obj.value == '__EMPTY__':
+        # Empty sets and frozensets
+        value = eval(dtype)(set())
+      else:
+        # Sets and frozensets that were saved as a 1D ndarray
+        value = eval(dtype)(obj.value)
+    elif dtype == 'dict':
+      value = {}
+      for key in obj.iterkeys():
+        ntype = obj[key].attrs.get('__NTYPE__', 'str')
+        if ntype == 'str':
+          value[key] = obj.get_obj(key)
+        else:
+          value[eval(key)] = obj.get_obj(key)
+    elif dtype == 'ndarray':
+      from numpy import array
+      value = array(obj.value)
+    elif dtype == 'matrix':
+      from numpy import matrix
+      value = matrix(obj.value)
+    else:
+      raise TypeError, 'datatype not supported: %s' % dtype
+
+    # Collect values
+    values.append(value)
+
+  # Return values
+  if len(values) == 1:
+    return values[0]
+  else:
+    return values
+
+  #def create_group(self, name):
+    #return Group(name)
+    ##h5pyGroup.create_group(self, name)
+
+
+
+# Monkey-patch the superclasses
+### Is there a better way?
+Group.create_obj = _create_obj
+Group.get_obj = _get_obj
+File.create_obj = _create_obj
+File.get_obj = _get_obj
+h5pyGroup.create_obj = _create_obj
+h5pyGroup.get_obj = _get_obj
+h5pyFile.create_obj = _create_obj
+h5pyFile.get_obj = _get_obj
+
+
+
+
+
+
+
+
+
+
+
+
+#=============================#
+# Functions for type checking #
+#=============================#
+
+def _allscalar(seq):
+  """Test if all elements of the sequence or set are scalar."""
+  # 2011-09-13
+  # former tb.allscalar from 2011-03-30
+  for element in seq:
+    if _isiterable(element):
+      return False
+    return True
+
+def _anyobject(seq):
+  """Test if any element of the sequence or set is an instance of a
+  user-defined class."""
+  # 2011-09-13
+  # former tb.anyobject from 2011-03-30
+  for element in seq:
+    if _isobject(element):
+      return True
+  return False
+
+def _equaltype(seq):
+  """Test if all elements of the sequence or set have the same type."""
+  # 2011-09-13
+  # former tb.equaltype from 2011-03-30
+  seq = list(seq)
+  first = seq.pop()
+  for element in seq:
+    if type(element).__name__ != type(first).__name__:
+      return False
+  return True
+
+def _isiterable(obj):
+  """Check if an object is iterable. Return True for lists, tuples,
+  dictionaries and numpy arrays (all objects that possess an __iter__ method).
+  Return False for scalars (float, int, etc.), strings, bool and None."""
+  # 2011-09-13
+  # former tb.isiterable from 2011-01-27
+  # former mytools.isiterable
+  # Inicial idea from
+  # http://bytes.com/topic/python/answers/514838-how-test-if-object-sequence-
+  # iterable:
+  # return isinstance(obj, basestring) or getattr(obj, '__iter__', False)
+  # I found this to be better:
+  return not getattr(obj, '__iter__', False) == False
+
+def _isobject(obj):
+  """Return True if obj possesses an attribute called "__dict__", otherwise
+  return False."""
+  # 2011-09-13
+  # former tb.isobject from 2011-02-09
+  # former mytools.isobject
+  return not getattr(obj, '__dict__', False) == False

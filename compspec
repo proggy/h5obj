@@ -1,0 +1,14 @@
+_h5complete()
+{
+    local curw=${COMP_WORDS[COMP_CWORD]}
+    if [ -z "$curw" ]
+    then
+        COMPREPLY=($(h5complete ''))
+    else
+        COMPREPLY=($(h5complete $curw))
+    fi
+    return 0
+}
+complete -F _h5complete -o nospace h5load h5save h5ls h5rm h5mkgrp h5rmgrp \
+                                   h5cp h5mv
+complete -o default -o nospace h5complete
