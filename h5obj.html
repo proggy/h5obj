@@ -9,19 +9,19 @@
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>h5obj</strong></big></big> (version 0.1)</font></td
 ><td align=right valign=bottom
 ><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/djung/lib/h5obj/__init__.py">/home/djung/lib/h5obj/__init__.py</a></font></td></tr></table>
-    <p><tt>This&nbsp;module&nbsp;defines&nbsp;a&nbsp;wrapper&nbsp;for&nbsp;the&nbsp;class&nbsp;h5py.<a href="#File">File</a>&nbsp;(and&nbsp;h5py.<a href="#Group">Group</a>),<br>
-and&nbsp;adds&nbsp;to&nbsp;it&nbsp;the&nbsp;ability&nbsp;to&nbsp;store&nbsp;any&nbsp;Python&nbsp;object&nbsp;(including&nbsp;nested&nbsp;and<br>
-empty&nbsp;lists&nbsp;and&nbsp;tuples,&nbsp;None,&nbsp;user-defined&nbsp;objects&nbsp;etc.)&nbsp;using&nbsp;the&nbsp;concept&nbsp;of<br>
-serialization.&nbsp;It&nbsp;uses&nbsp;the&nbsp;cPickle&nbsp;module&nbsp;for&nbsp;objects&nbsp;which&nbsp;fail&nbsp;to&nbsp;convert<br>
-properly&nbsp;to&nbsp;a&nbsp;default&nbsp;HDF5&nbsp;datatype,&nbsp;and&nbsp;when&nbsp;loading&nbsp;any&nbsp;string&nbsp;data,&nbsp;it<br>
-tries&nbsp;to&nbsp;deserialize&nbsp;it&nbsp;before&nbsp;loading&nbsp;the&nbsp;string&nbsp;normally.&nbsp;It&nbsp;also&nbsp;makes<br>
-sure&nbsp;that&nbsp;if&nbsp;you&nbsp;get&nbsp;back&nbsp;exactly&nbsp;the&nbsp;datatype&nbsp;that&nbsp;you&nbsp;were&nbsp;saving&nbsp;(e.g.,&nbsp;if<br>
-you&nbsp;save&nbsp;a&nbsp;tuple&nbsp;or&nbsp;list&nbsp;using&nbsp;h5py.<a href="#File">File</a>,&nbsp;you&nbsp;probably&nbsp;get&nbsp;back&nbsp;a<br>
-numpy.ndarray).<br>
+    <p><tt>This&nbsp;module&nbsp;defines&nbsp;a&nbsp;wrapper&nbsp;for&nbsp;the&nbsp;class&nbsp;h5py.<a href="#File">File</a>&nbsp;(and&nbsp;h5py.<a href="#Group">Group</a>),&nbsp;and<br>
+adds&nbsp;to&nbsp;it&nbsp;the&nbsp;ability&nbsp;to&nbsp;store&nbsp;any&nbsp;Python&nbsp;object&nbsp;(including&nbsp;nested&nbsp;and&nbsp;empty<br>
+lists&nbsp;and&nbsp;tuples,&nbsp;the&nbsp;None&nbsp;type,&nbsp;user-defined&nbsp;objects&nbsp;etc.)&nbsp;using&nbsp;the&nbsp;concept<br>
+of&nbsp;serialization.&nbsp;It&nbsp;uses&nbsp;the&nbsp;cPickle&nbsp;module&nbsp;for&nbsp;objects&nbsp;which&nbsp;fail&nbsp;to&nbsp;convert<br>
+properly&nbsp;to&nbsp;one&nbsp;of&nbsp;the&nbsp;default&nbsp;HDF5&nbsp;datatypes,&nbsp;and&nbsp;when&nbsp;loading&nbsp;strings,&nbsp;it<br>
+tries&nbsp;to&nbsp;deserialize&nbsp;it&nbsp;before&nbsp;loading&nbsp;the&nbsp;string&nbsp;the&nbsp;normal&nbsp;way.&nbsp;It&nbsp;also&nbsp;makes<br>
+sure&nbsp;that&nbsp;you&nbsp;get&nbsp;back&nbsp;exactly&nbsp;the&nbsp;datatype&nbsp;that&nbsp;you&nbsp;were&nbsp;saving&nbsp;to&nbsp;the&nbsp;HDF5<br>
+file&nbsp;(unlike&nbsp;h5py.<a href="#File">File</a>,&nbsp;where&nbsp;you&nbsp;usually&nbsp;save&nbsp;a&nbsp;tuple&nbsp;or&nbsp;list,&nbsp;and&nbsp;get&nbsp;back&nbsp;a<br>
+numpy.ndarray&nbsp;instead).<br>
 &nbsp;<br>
-If&nbsp;in&nbsp;certain&nbsp;situations,&nbsp;attempts&nbsp;to&nbsp;pickle/unpickle&nbsp;data&nbsp;are&nbsp;not&nbsp;wanted,<br>
-it&nbsp;can&nbsp;be&nbsp;switched&nbsp;off&nbsp;using&nbsp;the&nbsp;attributes&nbsp;"pickle"&nbsp;and&nbsp;"unpickle"&nbsp;of&nbsp;the<br>
-classes&nbsp;"<a href="#Group">Group</a>"&nbsp;and&nbsp;"<a href="#File">File</a>".<br>
+If&nbsp;in&nbsp;certain&nbsp;situations,&nbsp;the&nbsp;attempt&nbsp;to&nbsp;pickle/unpickle&nbsp;the&nbsp;data&nbsp;is&nbsp;not<br>
+wanted,&nbsp;it&nbsp;can&nbsp;be&nbsp;switched&nbsp;off&nbsp;using&nbsp;the&nbsp;attributes&nbsp;"pickle"&nbsp;and&nbsp;"unpickle"&nbsp;of<br>
+the&nbsp;classes&nbsp;"<a href="#Group">Group</a>"&nbsp;and&nbsp;"<a href="#File">File</a>".<br>
 &nbsp;<br>
 This&nbsp;module&nbsp;depends&nbsp;on&nbsp;the&nbsp;module&nbsp;"h5py".&nbsp;It&nbsp;is&nbsp;available&nbsp;at<br>
 "<a href="http://www.h5py.org/">http://www.h5py.org/</a>"&nbsp;under&nbsp;a&nbsp;BSD&nbsp;license.<br>

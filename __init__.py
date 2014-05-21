@@ -21,19 +21,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 #
-"""This module defines a wrapper for the class h5py.File (and h5py.Group),
-and adds to it the ability to store any Python object (including nested and
-empty lists and tuples, None, user-defined objects etc.) using the concept of
-serialization. It uses the cPickle module for objects which fail to convert
-properly to a default HDF5 datatype, and when loading any string data, it
-tries to deserialize it before loading the string normally. It also makes
-sure that if you get back exactly the datatype that you were saving (e.g., if
-you save a tuple or list using h5py.File, you probably get back a
-numpy.ndarray).
+"""This module defines a wrapper for the class h5py.File (and h5py.Group), and
+adds to it the ability to store any Python object (including nested and empty
+lists and tuples, the None type, user-defined objects etc.) using the concept
+of serialization. It uses the cPickle module for objects which fail to convert
+properly to one of the default HDF5 datatypes, and when loading strings, it
+tries to deserialize it before loading the string the normal way. It also makes
+sure that you get back exactly the datatype that you were saving to the HDF5
+file (unlike h5py.File, where you usually save a tuple or list, and get back a
+numpy.ndarray instead).
 
-If in certain situations, attempts to pickle/unpickle data are not wanted,
-it can be switched off using the attributes "pickle" and "unpickle" of the
-classes "Group" and "File".
+If in certain situations, the attempt to pickle/unpickle the data is not
+wanted, it can be switched off using the attributes "pickle" and "unpickle" of
+the classes "Group" and "File".
 
 This module depends on the module "h5py". It is available at
 "http://www.h5py.org/" under a BSD license.
