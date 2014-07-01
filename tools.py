@@ -65,7 +65,7 @@ except ImportError:
       opttypes=dict(item=int, call=float))
 def h5load(fdpath, dtype=False, dlen=False, x=False, y=False, attrs=False,
            item=None, call=None, dmax=False, dmin=False, var=False,
-           stderr=False):
+           stderr=False, unpickle=True):
     """Load a dataset from a HDF5 file."""
     # 2013-07-08 - 2014-03-21
     filename, dsetname = h5split(fdpath)
@@ -73,7 +73,7 @@ def h5load(fdpath, dtype=False, dlen=False, x=False, y=False, attrs=False,
         print >>sys.stderr, 'h5load: cannot load "%s": ' % fdpath +\
                             'no such file or directory'
         sys.exit(1)
-    with h5obj.File(filename, 'r') as f:
+    with h5obj.File(filename, 'r', unpickle=unpickle) as f:
         found = dsetname in f
         if found:
             data = f[dsetname]
@@ -113,13 +113,13 @@ optdoc = dict(force='overwrite existing datasets', data='data to save')
 
 
 @Frog(optdoc=optdoc, opttypes=dict(data=str), preproc=dict(data=eval))
-def h5save(fdpath, data=None, force=False):
+def h5save(fdpath, data=None, force=False, pickle=True):
     """Save a dataset to a HDF5 file."""
     filename, dsetname = h5split(fdpath)
     if not filename and fdpath.count('/'):
         filename, dsetname = dsetname.split('/', 1)
     if not filename or not dsetname:
-        print >>sys.stderr, 'h5save1: no dataset name specified'
+        print >>sys.stderr, 'h5save: no dataset name specified'
         sys.exit(1)
     if os.path.isfile(filename):
         with h5obj.File(filename, 'r') as f:
@@ -127,10 +127,10 @@ def h5save(fdpath, data=None, force=False):
     else:
         found = False
     if found and not force:
-        print >>sys.stderr, 'h5save1: cannot save "%s": dataset exists' \
+        print >>sys.stderr, 'h5save: cannot save "%s": dataset exists' \
             % fdpath
         sys.exit(1)
-    with h5obj.File(filename, 'a') as f:
+    with h5obj.File(filename, 'a', pickle=pickle) as f:
         if found:
             del f[dsetname]
         f[dsetname] = data
@@ -260,6 +260,24 @@ def h5rmgrp(fdpattern, ignore_fail_on_non_empty=False):  # parents=False
             sys.exit(1)
         with h5obj.File(filename, 'r+') as f:
             del f[grpname]
+
+
+@Frog()
+def h5setitem(fdpattern, key, value):
+    """Set an item of a HDF5 dataset to some value."""
+    # 2014-06-24
+    fdpaths = h5glob(fdpattern)
+    if not fdpaths:
+        print >>sys.stderr, 'h5setitem: no such dataset: "%s"' % fdpattern
+        sys.exit(1)
+    for fdpath in fdpaths:
+        filename, dsetname = h5split(fdpath)
+        with h5obj.File(filename, 'r') as f:
+            obj = f[dsetname]
+        obj[key] = eval(value)
+        h5rm(fdpath, force=True)
+        with h5obj.File(filename, 'a') as f:
+            f[dsetname] = obj
 
 
 optdoc = dict(force='overwrite existing datasets',
