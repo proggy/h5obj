@@ -1,46 +1,44 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright notice
-# ----------------
+# Copyright notice ----------------
 #
-# Copyright (C) 2013 Daniel Jung
-# Contact: d.jung@jacobs-university.de
+# Copyright (C) 2013-2014 Daniel Jung Contact: djungbremen@gmail.com
 #
-# This program is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the Free
-# Software Foundation; either version 2 of the License, or (at your option)
-# any later version.
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-# more details.
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
 #
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+# Place, Suite 330, Boston, MA 02111-1307 USA.
 #
-"""This module defines a wrapper for the class h5py.File (and h5py.Group), and
-adds to it the ability to store any Python object (including nested and empty
-lists and tuples, the None type, user-defined objects etc.) using the concept
-of serialization. It uses the cPickle module for objects which fail to convert
-properly to one of the default HDF5 datatypes, and when loading strings, it
-tries to deserialize it before loading the string the normal way. It also makes
-sure that you get back exactly the datatype that you were saving to the HDF5
-file (unlike h5py.File, where you usually save a tuple or list, and get back a
-numpy.ndarray instead).
+"""This module defines a wrapper for the class *h5py.File* (and *h5py.Group*),
+and adds to it the ability to store any Python object (including nested and
+empty lists and tuples, the *None* type, instances of user-defined classes
+etc.) using the concept of serialization. It uses the *cPickle* module for
+objects which fail to convert properly to one of the default HDF5 datatypes,
+and when loading strings, it first tries to deserialize them before loading
+them the normal way. It also makes sure that you get back exactly the datatype
+that you were saving to the HDF5 file (unlike *h5py.File*, where you usually
+save a tuple or list, and get back a numpy.ndarray instead).
 
-If in certain situations, the attempt to pickle/unpickle the data is not
-wanted, it can be switched off using the attributes "pickle" and "unpickle" of
-the classes "Group" and "File".
+If in certain situations, the attempt to pickle or unpickle the data is not
+wanted, it can be switched off using the attributes *pickle* and *unpickle* of
+the classes *Group* and *File*.
 
-This module depends on the module "h5py". It is available at
-"http://www.h5py.org/" under a BSD license.
-
-To do:
---> make get-method unpickle (so far it just calls the original get-method)
-"""
+This module depends on the module *h5py*. It is available at
+http://www.h5py.org/ under a BSD license."""
+#
+# To do:
+# --> make get-method unpickle (so far it just calls the original get-method)
+#
 __created__ = '2013-07-07'
 __modified__ = '2013-07-18'
 __version__ = '0.1'
@@ -51,7 +49,7 @@ import h5py
 
 
 class Group(collections.MutableMapping):
-    """Wrapper for h5py.Group, using serialization for objects that normally
+    """Wrapper for *h5py.Group*, using serialization for objects that normally
     would not be able to be stored in a HDF5 file."""
     __created__ = '2013-07-07'
     __modified__ = '2013-07-07'
@@ -138,7 +136,7 @@ class Group(collections.MutableMapping):
 
 
 class File(Group):
-    """Wrapper for h5py.File, using serialization for objects that normally
+    """Wrapper for *h5py.File*, using serialization for objects that normally
     would not be able to be stored in a HDF5 file."""
     __created__ = '2013-07-07'
     __modified__ = '2013-07-18'
