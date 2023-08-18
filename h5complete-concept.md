@@ -1,3 +1,7 @@
+# Concept of h5complete
+
+Tab completion for h5complete
+
 Example:
 HDF5 file at folder/file.h5
 dataset at folder/file.h5/group/dset

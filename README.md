@@ -1,16 +1,16 @@
 h5obj
 =====
 
-Store any Python object in HDF5 files using serialization. Defines wrappers for
-h5py.File and h5py.Group.
+Store native Python objects in HDF5 files using strings in json format.
+Defines wrappers for h5py.File and h5py.Group.
 
 
 
 Copyright notice
 ----------------
 
-Copyright (C) 2013-2014 Daniel Jung.
-Contact: djungbremen@gmail.com
+Copyright (C) 2013-2023 Daniel Jung
+Contact: proggy-contact@mailbox.org
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free

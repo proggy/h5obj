@@ -4,8 +4,8 @@
 # Copyright notice
 # ----------------
 #
-# Copyright (C) 2013 Daniel Jung
-# Contact: d.jung@jacobs-university.de
+# Copyright (C) 2013-2023 Daniel Jung
+# Contact: proggy-contact@mailbox.org
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the Free
@@ -22,34 +22,31 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 #
 """Define tools that use the capabilities of the module "h5obj", hence
-recognizing Python objects that have been stored inside HDF5 files using
-serialization."""
-__created__ = '2013-07-08'
-__modified__ = '2014-03-21'
-import dummy
+recognizing native Python objects that have been stored inside HDF5 files
+using strings in the json format.
+
+With the comliner package (optional dependency) and some additional
+configuration steps, these tools can also be used as command line tools.
+"""
+
 import fnmatch
 import glob
 import os
 import sys
-import h5obj
 from columnize import columnize
 import numpy
 import cofunc
 
+import h5obj
+from h5obj import dummy
+
 try:
-    from frog import Frog
+    from comliner import Comliner
 except ImportError:
-    Frog = dummy.Decorator
+    Comliner = dummy.Decorator
 
 
-# To do:
-# --> add --parents to h5mkgrp and h5rmgrp
-# --> is h5ls, don't list groups!! list content of groups
-#     not like "find", but like "ls" (without -d option)!
-# --> do not have to use "," as a separator in "h5cp", improve frog
-
-
-@Frog(shortopts=dict(dtype='t', dlen='l', dmax='m', dmin='n'),
+@Comliner(shortopts=dict(dtype='t', dlen='l', dmax='m', dmin='n'),
       optdoc=dict(dtype='return datatype of the object',
                   dlen='return length of the object',
                   x='return argument "x" of the object',
@@ -66,20 +63,18 @@ except ImportError:
 def h5load(fdpath, dtype=False, dlen=False, x=False, y=False, attrs=False,
            item=None, call=None, dmax=False, dmin=False, var=False,
            stderr=False):
-    """Load a dataset from a HDF5 file."""
-    # 2013-07-08 - 2014-03-21
+    """Load a dataset from an HDF5 file.
+    """
     filename, dsetname = h5split(fdpath)
     if not os.path.isfile(filename):
-        print >>sys.stderr, 'h5load: cannot load "%s": ' % fdpath +\
-                            'no such file or directory'
+        print(f'h5load: cannot load "{fdpath}": no such file or directory', file=sys.stderr)
         sys.exit(1)
     with h5obj.File(filename, 'r') as f:
         found = dsetname in f
         if found:
             data = f[dsetname]
     if not found:
-        print >>sys.stderr, 'h5load: cannot load "%s": no such dataset' \
-                            % fdpath
+        print(f'h5load: cannot load "{fdpath}": no such dataset', file=sys.stderr)
         sys.exit(1)
     if dtype:
         data = type(data)
@@ -112,14 +107,15 @@ def h5load(fdpath, dtype=False, dlen=False, x=False, y=False, attrs=False,
 optdoc = dict(force='overwrite existing datasets', data='data to save')
 
 
-@Frog(optdoc=optdoc, opttypes=dict(data=str), preproc=dict(data=eval))
+@Comliner(optdoc=optdoc, opttypes=dict(data=str), preproc=dict(data=eval))
 def h5save(fdpath, data=None, force=False):
-    """Save a dataset to a HDF5 file."""
+    """Save a dataset to an HDF5 file.
+    """
     filename, dsetname = h5split(fdpath)
     if not filename and fdpath.count('/'):
         filename, dsetname = dsetname.split('/', 1)
     if not filename or not dsetname:
-        print >>sys.stderr, 'h5save1: no dataset name specified'
+        print('h5save1: no dataset name specified', file=sys.stderr)
         sys.exit(1)
     if os.path.isfile(filename):
         with h5obj.File(filename, 'r') as f:
@@ -127,8 +123,7 @@ def h5save(fdpath, data=None, force=False):
     else:
         found = False
     if found and not force:
-        print >>sys.stderr, 'h5save1: cannot save "%s": dataset exists' \
-            % fdpath
+        print('h5save1: cannot save "{fdpath}": dataset exists', file=sys.stderr)
         sys.exit(1)
     with h5obj.File(filename, 'a') as f:
         if found:
@@ -136,10 +131,11 @@ def h5save(fdpath, data=None, force=False):
         f[dsetname] = data
 
 
-@Frog(postproc=columnize)
+@Comliner(postproc=columnize)
 def h5ls(fdpath):  # long=False (list objtype, datatype and maybe data)
     """List contents of HDF5 files (and groups). Expect combined
-    filename/dataset path. Return list of dataset/group names."""
+    filename/dataset path. Return list of dataset/group names.
+    """
     filename, dsetname = h5split(fdpath)
     if not os.path.exists(filename):
         _error_fdpath_not_found('h5ls', fdpath)
@@ -160,12 +156,13 @@ def h5ls(fdpath):  # long=False (list objtype, datatype and maybe data)
     return contents
 
 
-# do a better h5ls instead? at least there should be only one frog for both
-# cases
-@Frog(outmap=dict(ALL='#@'))
+# make a better h5ls instead? at least there should be only one comliner for
+# both cases
+@Comliner(outmap=dict(ALL='#@'))
 def h5ll(fdpath):
     """List contents of HDF5 files (and groups), along with some information.
-    Expect combined filename/dataset path. Return dict of dict."""
+    Expect combined filename/dataset path. Return dict of dict.
+    """
     raise NotImplementedError
     filename, dsetname = h5split(fdpath)
     if not os.path.exists(filename):
@@ -191,14 +188,13 @@ optdoc = dict(force='never prompt',
               recursive='remove groups and their contents recursively')
 
 
-@Frog(optdoc=optdoc)
+@Comliner(optdoc=optdoc)
 def h5rm(fdpattern, force=False, recursive=False):
-    """Remove datasets from HDF5 files."""
+    """Remove datasets from HDF5 files.
+    """
     fdpaths = h5glob(fdpattern)
     if not fdpaths:
-        print >>sys.stderr, \
-            'h5rm: cannot remove "%s": no such group or dataset' \
-            % fdpattern
+        print(f'h5rm: cannot remove "{fdpattern}": no such group or dataset', file=sys.stderr)
         sys.exit(1)
     for fdpath in fdpaths:
         filename, dsetname = h5split(fdpath)
@@ -206,8 +202,7 @@ def h5rm(fdpattern, force=False, recursive=False):
             dsettype = type(f[dsetname])
         if dsettype is h5obj.Group:
             if not recursive:
-                print >>sys.stderr, 'h5rm: cannot remove "%s": is a group' \
-                    % fdpath
+                print('h5rm: cannot remove "{fdpath}": is a group', file=sys.stderr)
                 sys.exit(1)
         if not force:
             typename = 'group' if dsettype is h5obj.Group else 'dataset'
@@ -219,44 +214,42 @@ def h5rm(fdpattern, force=False, recursive=False):
             del f[dsetname]
 
 
-@Frog()
+@Comliner()
 def h5mkgrp(fdpath):  # parents=False
-    """Create groups in HDF5 files."""
+    """Create groups in HDF5 files.
+    """
     filename, grpname = h5split(fdpath)
     if not grpname:
-        print >>sys.stderr, 'h5mkgrp: no groupname given'
+        print('h5mkgrp: no groupname given', file=sys.stderr)
         sys.exit(1)
     if not os.path.isfile(filename):
-        print >>sys.stderr, \
-            'h5mkgrp: cannot open "%s": no such file' % filename
+        print(f'h5mkgrp: cannot open "{filename}": no such file', file=sys.stderr)
         sys.exit(1)
     with h5obj.File(filename, 'r+') as f:
         f.create_group(grpname)
 
 
-@Frog()
+@Comliner()
 def h5rmgrp(fdpattern, ignore_fail_on_non_empty=False):  # parents=False
-    """Remove empty groups from HDF5 files."""
+    """Remove empty groups from HDF5 files.
+    """
     fdpaths = h5glob(fdpattern)
     if not fdpaths:
-        print >>sys.stderr, 'h5rmgrp: failed to remove "%s": ' % fdpattern +\
-                            'no such group or dataset'
+        print(f'h5rmgrp: failed to remove "{fdpattern}": no such group or dataset', file=sys.stderr)
         sys.exit(1)
     for fdpath in fdpaths:
         filename, grpname = h5split(fdpath)
         with h5obj.File(filename, 'r') as f:
             objtype = type(f[grpname])
         if objtype is not h5obj.Group:
-            print >>sys.stderr, 'h5rmgrp: cannot remove "%s": is a dataset' \
-                                % fdpath
+            print(f'h5rmgrp: cannot remove "{fdpath}": is a dataset', file=sys.stderr)
             sys.exit(1)
         with h5obj.File(filename, 'r') as f:
             contents = f[grpname].keys()
         if contents:
             if ignore_fail_on_non_empty:
                 continue
-            print >>sys.stderr, \
-                'h5rmgrp: failed to remove "%s": group not empty' % fdpath
+            print(f'h5rmgrp: failed to remove "{fdpath}": group not empty', file=sys.stderr)
             sys.exit(1)
         with h5obj.File(filename, 'r+') as f:
             del f[grpname]
@@ -266,10 +259,11 @@ optdoc = dict(force='overwrite existing datasets',
               recursive='copy groups recursively')
 
 
-@Frog(optdoc=optdoc)
+@Comliner(optdoc=optdoc)
 def h5cp(source, dest, force=False, recursive=False):
     """Copy datasets and groups in HDF5 files (or from one HDF5 file to
-    another)."""
+    another).
+    """
     filename, objname = h5split(source)
     with h5obj.File(filename, 'r') as f:
         found = objname in f
@@ -280,7 +274,7 @@ def h5cp(source, dest, force=False, recursive=False):
     destfilename, destobjname = h5split(dest)
     if objtype is h5obj.Group:
         if not recursive:
-            print >>sys.stderr, 'h5cp: omitting group "%s"' % source
+            print(f'h5cp: omitting group "{source}"', file=sys.stderr)
             sys.exit(1)
 
         # copy group recursively
@@ -322,10 +316,11 @@ def h5cp(source, dest, force=False, recursive=False):
             h5save(new, data=data, force=force)
 
 
-@Frog()
+@Comliner()
 def h5mv(source, dest, recursive=False):
     """Move (rename) datasets in HDF5 files (or from one HDF5 file to
-    another)."""
+    another).
+    """
     h5cp(source, dest, recursive=recursive)
     h5rm(source, force=True, recursive=recursive)
 
@@ -333,8 +328,8 @@ def h5mv(source, dest, recursive=False):
 def h5glob_filewise(fdpattern, unique=False, sort=False):
     """Expand a combined filename/dataset pattern. Return list of new combined
     filename/dataset patterns, on per file (only dataset part remains a
-    pattern)."""
-    # 2013-07-12 - 2013-07-12
+    pattern).
+    """
     filepattern, dsetpattern = h5split(fdpattern)
     new_fdpatterns = []
     filenames = glob.glob(filepattern)
@@ -352,8 +347,8 @@ def h5glob_filewise(fdpattern, unique=False, sort=False):
 
 def h5glob(fdpattern, unique=False, sort=False):
     """Expand a combined filename/dataset pattern. Return list of single
-    combined filename/dataset paths."""
-    # 2013-07-08 - 2013-07-08
+    combined filename/dataset paths.
+    """
     filepattern, dsetpattern = h5split(fdpattern)
     if not filepattern:
         return []
@@ -378,11 +373,11 @@ def h5split(pattern):
     """Split a combined filename/dataset pattern into the filename part and the
     dataset part. Return filename pattern and dataset pattern. The given
     pattern must contain at least one slash that devides the filename part from
-    the dataset part."""
-    # 2013-07-08 - 2013-07-12
+    the dataset part.
+    """
     parts = pattern.split('/')
     #if len(parts) < 2:
-        #raise ValueError, 'pattern must contain at least one slash "/"'
+        #raise ValueError('pattern must contain at least one slash "/"')
     for mark in xrange(len(parts)):
         if mark == 0 and not parts[mark]:
             continue
@@ -400,7 +395,7 @@ def h5split(pattern):
     return filepattern, dsetpattern
 
 
-@Frog(outmap={0: '#@'})
+@Comliner(outmap={0: '#@'})
 def h5complete(incompl):
     # check if incompl is a pure file path
     globbed = glob.glob(incompl+'*')
@@ -444,7 +439,6 @@ def h5complete(incompl):
                 name += '/'
             out.append(name)
         return out
-
     return []
 
 
@@ -464,11 +458,10 @@ def divide(string, char, n):
 
 
 def _error_fdpath_not_found(prog, fdpath):
-    print >>sys.stderr, '%s: cannot access "%s": no such group or dataset' \
-                        % (prog, fdpath)
+    print(f'{prog}: cannot access "{fdpath}": no such group or dataset', file=sys.stderr)
     sys.exit(1)
 
 
 def _error_not_file(prog, dirname):
-    print >>sys.stderr, '%s: %s: is a directory' % (prog, dirname)
+    print(f'{prog}: {dirname}: is a directory', file=sys.stderr)
     sys.exit(1)
